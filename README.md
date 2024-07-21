@@ -27,8 +27,7 @@ Os logs da aplicação são configurados no arquivo `config/log_config.py`. O si
 ClaroTrainingInsights/
 │
 ├── config/
-│   ├── log_config.py
-│   └── settings.py
+│   └── log_config.py
 │
 ├── controllers/
 │   └── course_controller.py
@@ -45,5 +44,6 @@ ClaroTrainingInsights/
 ├── main_dashboard.py
 ├── config.yaml
 ├── main.py
-└── .env
+├── requirements.txt
+└── app.yaml
 

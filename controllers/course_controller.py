@@ -1,3 +1,5 @@
+# controllers/course_controller.py
+
 import plotly.express as px
 import streamlit as st
 from config.log_config import log
