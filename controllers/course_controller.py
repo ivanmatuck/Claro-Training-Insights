@@ -46,6 +46,17 @@ def load_dashboard():
             fig2 = px.treemap(treemap_data, path=['Diretoria', 'Curso'], values='Frequência que foram mencionados',
                               color='Frequência que foram mencionados', color_continuous_scale='RdYlGn_r')
             fig2.update_traces(hovertemplate='<b>Diretoria:</b> %{customdata[0]}<br><b>Curso:</b> %{label}<br><b>Frequência:</b> %{value}')
+            fig2.update_layout(coloraxis_colorbar=dict(
+                title="Frequência",
+                titleside="top",
+                tickmode="array",
+                ticks="outside",
+                tickvals=[1, 2, 3, 4, 5, 6],
+                ticktext=["1", "2", "3", "4", "5", "6"],
+                lenmode="pixels",
+                len=150,  # Tamanho da legenda
+                nticks=3  # Número de linhas
+            ))
             st.plotly_chart(fig2, use_container_width=True)
             log.info("Treemap chart created")
         else:
