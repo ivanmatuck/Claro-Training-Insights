@@ -1,3 +1,5 @@
+# services/course_service.py
+
 import pandas as pd
 from config.log_config import log
 
@@ -40,3 +42,6 @@ def get_top_courses(df_skills):
     except KeyError as e:
         log.error("Error calculating top courses: %s", str(e), exc_info=True)
         return pd.DataFrame(), pd.DataFrame()  # Retorna DataFrames vazios em caso de erro
+
+
+

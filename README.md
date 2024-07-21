@@ -37,7 +37,12 @@ ClaroTrainingInsights/
 │   └── course_service.py
 │
 ├── data/
-│   └── cursos_combined_matched.xlsx
+│   └── cursos_combined_matched.xlsx│
 │
+├── img/
+│   └── png-transparent-claro-hd-logo.png
+│
+├── main_dashboard.py
+├── config.yaml
 ├── main.py
 └── .env

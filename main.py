@@ -9,6 +9,7 @@ load_dotenv()
 # Configurar logging
 log.info("Starting the Streamlit server for ClaroTraining Insights...")
 
+
 def main():
     try:
         # Configurar e iniciar o Streamlit na porta definida em Settings
@@ -16,6 +17,7 @@ def main():
         subprocess.run(streamlit_command, shell=True, check=True)
     except Exception as e:
         log.error("Error starting the Streamlit server: %s", str(e), exc_info=True)
+
 
 if __name__ == '__main__':
     log.info("Starting the Streamlit server for ClaroTraining Insights...")
