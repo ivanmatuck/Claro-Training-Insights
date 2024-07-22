@@ -4,7 +4,6 @@ from config.log_config import log
 import streamlit as st
 from datetime import datetime
 
-
 # Função para verificar e salvar o arquivo carregado
 def save_uploaded_file(uploaded_file):
     timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
@@ -13,7 +12,6 @@ def save_uploaded_file(uploaded_file):
         f.write(uploaded_file.getbuffer())
     st.success(f"Arquivo {new_filename} carregado com sucesso!")
     manage_files()
-
 
 # Função para carregar dados do arquivo selecionado
 def load_data(selected_file):
@@ -27,16 +25,13 @@ def load_data(selected_file):
         log.error("Error loading data: %s", str(e), exc_info=True)
         return pd.DataFrame()  # Retorna DataFrame vazio em caso de erro
 
-
 # Função para validar se o arquivo possui as colunas necessárias
 def validate_columns(df, required_columns):
     return all(column in df.columns for column in required_columns)
 
-
 # Função para listar todos os arquivos XLSX na pasta 'data'
 def list_xlsx_files():
     return [f for f in os.listdir("data") if f.endswith(".xlsx")]
-
 
 # Função para obter o arquivo mais recente
 def get_latest_file():
@@ -46,7 +41,6 @@ def get_latest_file():
     latest_file = max(files, key=lambda x: os.path.getmtime(os.path.join("data", x)))
     return latest_file
 
-
 # Função para gerenciar arquivos e manter apenas os três mais recentes
 def manage_files():
     files = list_xlsx_files()
@@ -55,7 +49,6 @@ def manage_files():
         for file in files[:-3]:
             os.remove(os.path.join("data", file))
             log.info("Deleted old file: %s", file)
-
 
 # Função para calcular métricas gerais
 def get_general_metrics(df):
@@ -68,7 +61,6 @@ def get_general_metrics(df):
     except KeyError as e:
         log.error("Error calculating general metrics: %s", str(e), exc_info=True)
         return 0, 0, 0  # Retorna zeros em caso de erro
-
 
 # Função para obter os principais cursos
 def get_top_courses(df):

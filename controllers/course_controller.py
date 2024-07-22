@@ -1,12 +1,10 @@
 # controllers/course_controller.py
 
-import os
-
 import plotly.express as px
 import streamlit as st
 
 from config.log_config import log
-from services.course_service import load_data, get_top_courses, save_uploaded_file, validate_columns, get_latest_file
+from services.course_service import load_data, get_top_courses, save_uploaded_file, get_latest_file
 
 
 def load_dashboard():
@@ -18,7 +16,7 @@ def load_dashboard():
     uploaded_file = st.sidebar.file_uploader("Faça o upload de um arquivo .xlsx", type=["xlsx"])
     if uploaded_file is not None:
         save_uploaded_file(uploaded_file)
-        st.experimental_rerun()
+        st.warning("Arquivo carregado com sucesso! Por favor, atualize a página para ver os dados atualizados.")
 
     # Obter o arquivo mais recente
     latest_file = get_latest_file()
