@@ -10,7 +10,7 @@ log.info("Starting the Streamlit server for ClaroTraining Insights...")
 def main():
     try:
         # Configurar e iniciar o Streamlit
-        streamlit_command = "streamlit run main_dashboard.py"
+        streamlit_command = "streamlit run main_dashboard.py --server.port=8501 --server.address=0.0.0.0"
         subprocess.run(streamlit_command, shell=True, check=True)
     except Exception as e:
         log.error("Error starting the Streamlit server: %s", str(e), exc_info=True)

@@ -5,11 +5,12 @@ import streamlit as st
 from config.log_config import log
 from services.course_service import load_data, get_general_metrics, get_top_courses
 
+
 def load_dashboard():
     log.info("Loading dashboard...")
     try:
         # Carregar os dados
-        df_frequencia, df_skills = load_data()
+        df = load_data()
         log.info("Data loaded for dashboard")
 
         # Título do dashboard
@@ -17,9 +18,9 @@ def load_dashboard():
         log.info("Dashboard title set")
 
         # Barra lateral para filtros
-        st.sidebar.image('img/png-transparent-claro-hd-logo.png', use_column_width=True)
+        st.sidebar.image('img/png-transparent-claro-hd-logo.png', width=150)  # Ajusta o tamanho do logo
         st.sidebar.header('Filtros')
-        diretoria_filter = st.sidebar.selectbox('Selecione a Diretoria', ['Todas'] + df_skills['Diretoria'].unique().tolist())
+        diretoria_filter = st.sidebar.selectbox('Selecione a Diretoria', ['Todas'] + df['diretoria'].unique().tolist())
         skill_filter = st.sidebar.radio('Selecione o Tipo de Habilidade', ['Todas', 'HardSkill', 'SoftSkill'])
         display_option = st.sidebar.radio('Opções de Exibição', ['Ambos', 'Tabelas', 'Gráficos'], index=0)
 
@@ -27,83 +28,71 @@ def load_dashboard():
 
         # Filtrar dados de acordo com as seleções
         if diretoria_filter != 'Todas':
-            df_skills = df_skills[df_skills['Diretoria'] == diretoria_filter]
-            log.info("Dados filtrados por Diretoria (%s):\n%s", diretoria_filter, df_skills.head().to_string())
+            df = df[df['diretoria'] == diretoria_filter]
+            log.info("Dados filtrados por Diretoria (%s):\n%s", diretoria_filter, df.head().to_string())
 
         if skill_filter != 'Todas':
-            df_skills = df_skills[df_skills['Tipo'] == skill_filter]
-            log.info("Dados filtrados por Tipo (%s):\n%s", skill_filter, df_skills.head().to_string())
+            df = df[df['tipo'] == skill_filter]
+            log.info("Dados filtrados por Tipo (%s):\n%s", skill_filter, df.head().to_string())
+
+        # Filtrar registros com frequencia maior que zero
+        treemap_data = df[df['frequencia'] > 0].groupby(['diretoria', 'cursos']).agg(
+            {'frequencia': 'sum'}).reset_index().rename(columns={'frequencia': 'Frequência'})
 
         # Gráfico treemap: Nível de urgência dos cursos (frequência de menção)
-        st.subheader('Nível de Urgência dos Cursos')
+        st.subheader('Nível de Urgência dos Cursos com base na frequência de citação')
         log.info("Subheader set for 'Nível de Urgência dos Cursos'")
-        if diretoria_filter == 'Todas':
-            treemap_data = df_frequencia
-        else:
-            treemap_data = df_frequencia[df_frequencia['Diretoria'] == diretoria_filter]
 
         if not treemap_data.empty:
-            fig2 = px.treemap(treemap_data, path=['Diretoria', 'Curso'], values='Frequência que foram mencionados',
-                              color='Frequência que foram mencionados', color_continuous_scale='RdYlGn_r')
-            fig2.update_traces(hovertemplate='<b>Diretoria:</b> %{customdata[0]}<br><b>Curso:</b> %{label}<br><b>Frequência:</b> %{value}')
+            fig2 = px.treemap(treemap_data, path=['diretoria', 'cursos'], values='Frequência', color='Frequência',
+                              color_continuous_scale='RdYlGn_r')
+            fig2.update_traces(marker=dict(colorscale='RdYlGn_r', line=dict(color='#FFFFFF', width=2)))
             fig2.update_layout(coloraxis_colorbar=dict(
                 title="Frequência",
-                titleside="top",
+                orientation="h",
+                x=0.5,
+                y=0,
+                xanchor="center",
+                yanchor="top",
                 tickmode="array",
                 ticks="outside",
-                tickvals=[1, 2, 3, 4, 5, 6],
-                ticktext=["1", "2", "3", "4", "5", "6"],
+                tickvals=[0, 0.5, 1],
+                ticktext=["Baixa", "Média", "Alta"],
                 lenmode="pixels",
-                len=150,  # Tamanho da legenda
-                nticks=3  # Número de linhas
+                len=300,
+                nticks=3
             ))
+            fig2.update_layout(margin=dict(t=25, l=0, r=0, b=0), coloraxis_showscale=True)
+            fig2.update_layout(paper_bgcolor='white')
             st.plotly_chart(fig2, use_container_width=True)
             log.info("Treemap chart created")
         else:
             st.write("Nenhum curso encontrado com frequência maior que 0 para a diretoria selecionada.")
             log.info("No data found for the selected filters in treemap")
 
-        if display_option in ['Tabelas', 'Ambos']:
-            st.subheader('Dados dos Cursos e Métricas Gerais')
-            col1, col2 = st.columns([1, 3])
-            log.info("Subheader set for 'Dados dos Cursos e Métricas Gerais'")
+        # Seção para adicionar gráficos de pizza dos cursos com maior frequência de menções
+        st.subheader('Cursos com Maior Frequência de Solicitações')
+        log.info("Subheader set for 'Cursos com Maior Frequência de Solicitações'")
 
-            with col1:
-                total_courses, total_hard_skills, total_soft_skills = get_general_metrics(df_skills)
-                st.metric(label="Total de Cursos", value=total_courses)
-                st.metric(label="Total de Hard Skills", value=total_hard_skills)
-                st.metric(label="Total de Soft Skills", value=total_soft_skills)
-                log.info("General metrics displayed")
+        col1, col2 = st.columns([1, 1], gap="small")
 
-            with col2:
-                st.dataframe(df_skills, use_container_width=True)
-                log.info("Dataframe for skills displayed")
+        with col1:
+            top_hard_skill_courses = df[df['tipo'] == 'HardSkill'].nlargest(5, 'frequencia').reset_index(drop=True)
+            fig_hard_skills = px.pie(top_hard_skill_courses, values='frequencia', names='cursos',
+                                     title='TOP Cursos - Hard Skills', color_discrete_sequence=px.colors.sequential.RdBu)
+            fig_hard_skills.update_layout(legend=dict(yanchor="bottom", y=0.01, xanchor="center", x=-0))
+            st.plotly_chart(fig_hard_skills, use_container_width=True)
+            log.info("Pie chart for Hard Skills displayed")
 
-        if display_option in ['Gráficos', 'Ambos']:
-            if diretoria_filter == 'Todas':
-                director_data = df_skills.groupby('Diretoria').size().reset_index(name='Quantidade')
-                fig1 = px.bar(director_data, x='Diretoria', y='Quantidade', title='Distribuição de Cursos por Diretoria', color_discrete_sequence=['#ED1C24'])
-                st.plotly_chart(fig1, use_container_width=True)
-                log.info("Bar chart for 'Distribuição de Cursos por Diretoria' displayed")
+        with col2:
+            top_soft_skill_courses = df[df['tipo'] == 'SoftSkill'].nlargest(5, 'frequencia').reset_index(drop=True)
+            fig_soft_skills = px.pie(top_soft_skill_courses, values='frequencia', names='cursos',
+                                     title='TOP Cursos - Soft Skills', color_discrete_sequence=px.colors.sequential.RdBu)
+            fig_soft_skills.update_layout(legend=dict(yanchor="bottom", y=0.01, xanchor="center", x=-0))
+            st.plotly_chart(fig_soft_skills, use_container_width=True)
+            log.info("Pie chart for Soft Skills displayed")
 
-            log.info("Dados para gráfico de Proporção de Hard Skills:\n%s", df_skills[df_skills['Tipo'] == 'HardSkill'].to_string())
-            log.info("Dados para gráfico de Proporção de Soft Skills:\n%s", df_skills[df_skills['Tipo'] == 'SoftSkill'].to_string())
-            if skill_filter == 'Todas' or skill_filter == 'HardSkill':
-                hard_skills_count = df_skills[df_skills['Tipo'] == 'HardSkill']['Skill'].value_counts().reset_index()
-                hard_skills_count.columns = ['Skill', 'Quantidade']
-                fig3 = px.bar(hard_skills_count, x='Skill', y='Quantidade', title='Proporção de Hard Skills', labels={'Quantidade': 'Quantidade', 'Skill': 'Hard Skills'}, color_discrete_sequence=['#ED1C24'])
-                fig3.update_layout(xaxis_tickangle=-45)
-                st.plotly_chart(fig3, use_container_width=True)
-                log.info("Bar chart for 'Proporção de Hard Skills' displayed")
-
-            if skill_filter == 'Todas' or skill_filter == 'SoftSkill':
-                soft_skills_count = df_skills[df_skills['Tipo'] == 'SoftSkill']['Skill'].value_counts().reset_index()
-                soft_skills_count.columns = ['Skill', 'Quantidade']
-                fig4 = px.bar(soft_skills_count, x='Skill', y='Quantidade', title='Proporção de Soft Skills', labels={'Quantidade': 'Quantidade', 'Skill': 'Soft Skills'}, color_discrete_sequence=['#ED1C24'])
-                fig4.update_layout(xaxis_tickangle=-45)
-                st.plotly_chart(fig4, use_container_width=True)
-                log.info("Bar chart for 'Proporção de Soft Skills' displayed")
-
+        # Seção para adicionar insights adicionais com métricas gerais dos cursos
         if display_option in ['Tabelas', 'Ambos']:
             st.subheader('Insights Adicionais')
             col1, col2 = st.columns(2)
@@ -111,14 +100,72 @@ def load_dashboard():
 
             with col1:
                 st.write("### Top 5 Cursos de Hard Skills")
-                top_hard_skill_courses, top_soft_skill_courses = get_top_courses(df_skills)
-                st.dataframe(top_hard_skill_courses[['Skill']], use_container_width=True, hide_index=True)
+                top_hard_skill_courses, top_soft_skill_courses = get_top_courses(df)
+                st.dataframe(top_hard_skill_courses[['cursos']], use_container_width=True, hide_index=True)
                 log.info("Top 5 Hard Skills displayed")
 
             with col2:
                 st.write("### Top 5 Cursos de Soft Skills")
-                st.dataframe(top_soft_skill_courses[['Skill']], use_container_width=True, hide_index=True)
+                st.dataframe(top_soft_skill_courses[['cursos']], use_container_width=True, hide_index=True)
                 log.info("Top 5 Soft Skills displayed")
+
+        # Seção de Dados dos Cursos
+        if display_option in ['Gráficos', 'Ambos']:
+            # Gráficos para skills de equipe
+            st.subheader('Cursos Mencionados pelas Equipes')
+            equipe_skills = df[df['solicitado por equipe'] == 'S']
+            if skill_filter == 'Todas' or skill_filter == 'HardSkill':
+                hard_skills_count = equipe_skills[equipe_skills['tipo'] == 'HardSkill'][
+                    'cursos'].value_counts().reset_index()
+                hard_skills_count.columns = ['cursos', 'Quantidade']
+                fig3 = px.bar(hard_skills_count, x='cursos', y='Quantidade', title='Proporção de Hard Skills (Equipe)',
+                              labels={'Quantidade': 'Quantidade', 'cursos': 'Hard Skills'},
+                              color_discrete_sequence=['#ED1C24'])
+                fig3.update_layout(xaxis_tickangle=-45)
+                st.plotly_chart(fig3, use_container_width=True)
+                log.info("Bar chart for 'Proporção de Menções de Cursos Hard Skills (Equipe)' displayed")
+
+            if skill_filter == 'Todas' or skill_filter == 'SoftSkill':
+                soft_skills_count = equipe_skills[equipe_skills['tipo'] == 'SoftSkill'][
+                    'cursos'].value_counts().reset_index()
+                soft_skills_count.columns = ['cursos', 'Quantidade']
+                fig4 = px.bar(soft_skills_count, x='cursos', y='Quantidade', title='Proporção de Soft Skills (Equipe)',
+                              labels={'Quantidade': 'Quantidade', 'cursos': 'Soft Skills'},
+                              color_discrete_sequence=['#ED1C24'])
+                fig4.update_layout(xaxis_tickangle=-45)
+                st.plotly_chart(fig4, use_container_width=True)
+                log.info("Bar chart for 'Proporção de Menções de Cursos Soft Skills (Equipe)' displayed")
+
+            # Gráficos para skills de executivos
+            st.subheader('Skills de Executivos')
+            executivos_skills = df[df['solicitado por  executivos'] == 'S']
+            if skill_filter == 'Todas' or skill_filter == 'HardSkill':
+                hard_skills_count = executivos_skills[executivos_skills['tipo'] == 'HardSkill']['cursos'].value_counts().reset_index()
+                hard_skills_count.columns = ['cursos', 'Quantidade']
+                fig5 = px.bar(hard_skills_count, x='cursos', y='Quantidade', title='Proporção de Hard Skills (Executivos)', labels={'Quantidade': 'Quantidade', 'cursos': 'Hard Skills'}, color_discrete_sequence=['#ED1C24'])
+                fig5.update_layout(xaxis_tickangle=-45)
+                st.plotly_chart(fig5, use_container_width=True)
+                log.info("Bar chart for 'Proporção de Menções de Cursos Hard Skills (Executivos)' displayed")
+
+            if skill_filter == 'Todas' or skill_filter == 'SoftSkill':
+                soft_skills_count = executivos_skills[executivos_skills['tipo'] == 'SoftSkill']['cursos'].value_counts().reset_index()
+                soft_skills_count.columns = ['cursos', 'Quantidade']
+                fig6 = px.bar(soft_skills_count, x='cursos', y='Quantidade', title='Proporção de Soft Skills (Executivos)', labels={'Quantidade': 'Quantidade', 'cursos': 'Soft Skills'}, color_discrete_sequence=['#ED1C24'])
+                fig6.update_layout(xaxis_tickangle=-45)
+                st.plotly_chart(fig6, use_container_width=True)
+                log.info("Bar chart for 'Proporção de Menções de Cursos Soft Skills (Executivos)' displayed")
+
+        if display_option in ['Tabelas', 'Ambos']:
+            st.subheader('Dados dos Cursos')
+            st.dataframe(df.reset_index(drop=True), use_container_width=True, hide_index=True)
+            log.info("Dataframe for skills displayed")
+
     except Exception as e:
         log.error("Error loading dashboard: %s", str(e), exc_info=True)
     log.info("Dashboard loaded successfully.")
+
+
+
+
+
+

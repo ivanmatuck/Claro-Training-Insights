@@ -10,6 +10,18 @@ from controllers.course_controller import load_dashboard
 # Configurar a largura do layout
 st.set_page_config(layout="wide")
 
+# Ocultar cabeçalho
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            header {visibility: hidden;}
+            #root > div:nth-child(1) > div.withScreencast > div > div > div > section.main.st-emotion-cache-bm2z3a.ea3mdgi8 > div.block-container.st-emotion-cache-1jicfl2.ea3mdgi5 {
+                padding: 1rem 1rem 5rem 1rem !important;
+            }
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Carregar as configurações do arquivo config.yaml
 log.info("Loading configuration from config.yaml")
 with open('config.yaml') as file:
@@ -26,7 +38,6 @@ authenticator = stauth.Authenticate(
 
 # Tela de login
 log.info("Displaying login screen")
-# Tela de login
 name, authentication_status, username = authenticator.login('main')
 log.info("Authentication status: %s", authentication_status)
 
