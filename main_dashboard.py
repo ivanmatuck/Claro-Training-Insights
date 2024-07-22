@@ -16,7 +16,7 @@ hide_streamlit_style = """
             #MainMenu {visibility: hidden;}
             header {visibility: hidden;}
             #root > div:nth-child(1) > div.withScreencast > div > div > div > section.main.st-emotion-cache-bm2z3a.ea3mdgi8 > div.block-container.st-emotion-cache-1jicfl2.ea3mdgi5 {
-                padding: 1rem 1rem 5rem 1rem !important;
+                padding: 2rem 2rem 5rem 2rem !important;
             }
             </style>
             """
