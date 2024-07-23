@@ -12,7 +12,6 @@ def load_dashboard():
 
     # Barra lateral para upload de arquivo
     st.sidebar.image('img/png-transparent-claro-hd-logo.png', width=50)  # Ajusta o tamanho do logo
-    st.sidebar.header('Filtros')
     uploaded_file = st.sidebar.file_uploader("Faça o upload de um arquivo .xlsx", type=["xlsx"])
     if uploaded_file is not None:
         save_uploaded_file(uploaded_file)
@@ -123,7 +122,15 @@ def load_dashboard():
         top_hard_skill_courses = df[df['tipo'] == 'HardSkill'].nlargest(5, 'frequencia').reset_index(drop=True)
         fig_hard_skills = px.pie(top_hard_skill_courses, values='frequencia', names='cursos',
                                  title='TOP Cursos - Hard Skills', color_discrete_sequence=px.colors.sequential.RdBu)
-        fig_hard_skills.update_layout(legend=dict(yanchor="bottom", y=0.01, xanchor="center", x=-0))
+        fig_hard_skills.update_layout(
+            legend=dict(
+                yanchor="bottom",
+                y=0.01,
+                xanchor="center",
+                x=-0,
+                bgcolor='rgba(0,0,0,0)'  # Definindo fundo transparente
+            )
+        )
         st.plotly_chart(fig_hard_skills, use_container_width=True)
         log.info("Pie chart for Hard Skills displayed")
 
@@ -131,7 +138,15 @@ def load_dashboard():
         top_soft_skill_courses = df[df['tipo'] == 'SoftSkill'].nlargest(5, 'frequencia').reset_index(drop=True)
         fig_soft_skills = px.pie(top_soft_skill_courses, values='frequencia', names='cursos',
                                  title='TOP Cursos - Soft Skills', color_discrete_sequence=px.colors.sequential.RdBu)
-        fig_soft_skills.update_layout(legend=dict(yanchor="bottom", y=0.01, xanchor="center", x=-0))
+        fig_soft_skills.update_layout(
+            legend=dict(
+                yanchor="bottom",
+                y=0.01,
+                xanchor="center",
+                x=-0,
+                bgcolor='rgba(0,0,0,0)'  # Definindo fundo transparente
+            )
+        )
         st.plotly_chart(fig_soft_skills, use_container_width=True)
         log.info("Pie chart for Soft Skills displayed")
 
