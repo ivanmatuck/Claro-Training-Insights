@@ -11,7 +11,7 @@ def load_dashboard():
     log.info("Loading dashboard...")
 
     # Barra lateral para upload de arquivo
-    st.sidebar.image('img/png-transparent-claro-hd-logo.png', width=150)  # Ajusta o tamanho do logo
+    st.sidebar.image('img/png-transparent-claro-hd-logo.png', width=50)  # Ajusta o tamanho do logo
     st.sidebar.header('Filtros')
     uploaded_file = st.sidebar.file_uploader("Faça o upload de um arquivo .xlsx", type=["xlsx"])
     if uploaded_file is not None:
@@ -48,31 +48,65 @@ def load_dashboard():
     treemap_data = df[df['frequencia'] > 0].groupby(['diretoria', 'cursos']).agg(
         {'frequencia': 'sum'}).reset_index().rename(columns={'frequencia': 'Frequência'})
 
+    # Função para adicionar quebras de linha após cada palavra com mais de dois caracteres
+    def add_line_breaks_long_words(text):
+        words = text.split()
+        new_text = []
+        for word in words:
+            if len(word) > 2:
+                new_text.append(word)
+            else:
+                if new_text:
+                    new_text[-1] += ' ' + word  # Adiciona palavras curtas à palavra anterior
+                else:
+                    new_text.append(word)
+        return '<br>'.join(new_text)
+
+    # Adicionar quebras de linha aos rótulos dos cursos
+    treemap_data['cursos'] = treemap_data['cursos'].apply(add_line_breaks_long_words)
+
+    # Normalizar a frequência dentro de cada diretoria
+    treemap_data['Normalized_Frequency'] = treemap_data.groupby('diretoria')['Frequência'].transform(
+        lambda x: (x - x.min()) / (x.max() - x.min())  # Normalizar entre 0 e 1
+    )
+
     # Gráfico treemap: Nível de urgência dos cursos (frequência de menção)
     st.subheader('Nível de Urgência dos Cursos com base na frequência de citação')
     log.info("Subheader set for 'Nível de Urgência dos Cursos'")
 
     if not treemap_data.empty:
-        fig2 = px.treemap(treemap_data, path=['diretoria', 'cursos'], values='Frequência', color='Frequência',
+        fig2 = px.treemap(treemap_data, path=['diretoria', 'cursos'], values='Frequência', color='Normalized_Frequency',
                           color_continuous_scale='RdYlGn_r')
-        fig2.update_traces(marker=dict(colorscale='RdYlGn_r', line=dict(color='#FFFFFF', width=2)))
-        fig2.update_layout(coloraxis_colorbar=dict(
-            title="Frequência",
-            orientation="h",
-            x=0.5,
-            y=0,
-            xanchor="center",
-            yanchor="top",
-            tickmode="array",
-            ticks="outside",
-            tickvals=[0, 0.5, 1],
-            ticktext=["Baixa", "Média", "Alta"],
-            lenmode="pixels",
-            len=300,
-            nticks=3
-        ))
-        fig2.update_layout(margin=dict(t=25, l=0, r=0, b=0), coloraxis_showscale=True)
-        fig2.update_layout(paper_bgcolor='white')
+
+        fig2.update_traces(
+            marker=dict(colorscale='RdYlGn_r', line=dict(color='#FFFFFF', width=2)),
+            insidetextfont=dict(size=10),
+            texttemplate='%{label}<br>%{value}',
+            hovertemplate='<b>%{label}</b><br>Frequência: %{value}<extra></extra>'
+        )
+
+        fig2.update_layout(
+            coloraxis_colorbar=dict(
+                title="",
+                orientation="h",
+                x=0.5,
+                y=-0,  # Ajuste esta linha para mover a legenda para baixo
+                xanchor="center",
+                yanchor="top",
+                tickmode="array",
+                ticks="outside",
+                tickvals=[0, 0.5, 1],  # Valores ajustados para início, meio e fim
+                ticktext=["Baixa", "Média", "Alta"],  # Textos ajustados para início, meio e fim
+                lenmode="pixels",
+                len=600,
+                nticks=3
+            ),
+            margin=dict(t=25, l=0, r=0, b=0),
+            coloraxis_showscale=True,
+            paper_bgcolor='white',
+            plot_bgcolor='white'
+        )
+
         st.plotly_chart(fig2, use_container_width=True)
         log.info("Treemap chart created")
     else:
