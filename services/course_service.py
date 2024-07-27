@@ -4,6 +4,7 @@ from config.log_config import log
 import streamlit as st
 from datetime import datetime
 
+
 # Função para verificar e salvar o arquivo carregado
 def save_uploaded_file(uploaded_file):
     timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
@@ -13,25 +14,30 @@ def save_uploaded_file(uploaded_file):
     st.success(f"Arquivo {new_filename} carregado com sucesso!")
     manage_files()
 
+
 # Função para carregar dados do arquivo selecionado
 def load_data(selected_file):
     try:
-        df = pd.read_excel(os.path.join('data', selected_file), engine='openpyxl')
+        quantitativos_df = pd.read_excel(os.path.join('data', selected_file), sheet_name='quantitativos', engine='openpyxl')
+        qualitativos_df = pd.read_excel(os.path.join('data', selected_file), sheet_name='qualitativos', engine='openpyxl')
         log.info("Data loaded successfully from %s", selected_file)
-        log.info("Columns in DataFrame: %s", df.columns.tolist())
-        log.info("Data in DataFrame:\n%s", df.head().to_string())
-        return df
+        log.info("Quantitativos columns: %s", quantitativos_df.columns.tolist())
+        log.info("Qualitativos columns: %s", qualitativos_df.columns.tolist())
+        return quantitativos_df, qualitativos_df
     except Exception as e:
         log.error("Error loading data: %s", str(e), exc_info=True)
-        return pd.DataFrame()  # Retorna DataFrame vazio em caso de erro
+        return pd.DataFrame(), pd.DataFrame()  # Retorna DataFrame vazio em caso de erro
+
 
 # Função para validar se o arquivo possui as colunas necessárias
 def validate_columns(df, required_columns):
     return all(column in df.columns for column in required_columns)
 
+
 # Função para listar todos os arquivos XLSX na pasta 'data'
 def list_xlsx_files():
     return [f for f in os.listdir("data") if f.endswith(".xlsx")]
+
 
 # Função para obter o arquivo mais recente
 def get_latest_file():
@@ -41,6 +47,7 @@ def get_latest_file():
     latest_file = max(files, key=lambda x: os.path.getmtime(os.path.join("data", x)))
     return latest_file
 
+
 # Função para gerenciar arquivos e manter apenas os três mais recentes
 def manage_files():
     files = list_xlsx_files()
@@ -49,6 +56,7 @@ def manage_files():
         for file in files[:-3]:
             os.remove(os.path.join("data", file))
             log.info("Deleted old file: %s", file)
+
 
 # Função para calcular métricas gerais
 def get_general_metrics(df):
@@ -62,13 +70,21 @@ def get_general_metrics(df):
         log.error("Error calculating general metrics: %s", str(e), exc_info=True)
         return 0, 0, 0  # Retorna zeros em caso de erro
 
-# Função para obter os principais cursos
-def get_top_courses(df):
-    try:
-        top_hard_skill_courses = df[df['tipo'] == 'HardSkill'].head(5).reset_index(drop=True)
-        top_soft_skill_courses = df[df['tipo'] == 'SoftSkill'].head(5).reset_index(drop=True)
-        log.info("Top courses calculated successfully")
-        return top_hard_skill_courses, top_soft_skill_courses
-    except KeyError as e:
-        log.error("Error calculating top courses: %s", str(e), exc_info=True)
-        return pd.DataFrame(), pd.DataFrame()  # Retorna DataFrames vazios em caso de erro
+
+# Exibição da tabela de dados qualitativos com quebras de linha mantidas
+def display_qualitative_data(df):
+    st.subheader('Dados Qualitativos')
+    styled_df = df.reset_index(drop=True).style.set_table_styles(
+        [
+            {'selector': 'td', 'props': [('vertical-align', 'top')]},
+            {'selector': 'th', 'props': [('vertical-align', 'top')]}
+        ]
+    ).hide(axis="index").to_html(escape=False).replace("\\n", "<br>")
+    st.markdown(
+        f"<div style='text-align: left; vertical-align: top; '>{styled_df}</div>",
+        unsafe_allow_html=True
+    )
+    log.info("Dataframe for qualitative data displayed")
+
+
+
